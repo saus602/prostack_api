@@ -1,16 +1,13 @@
-from sqlalchemy import Column, Integer, String, Boolean, Numeric, Text
+# models.py
+
+from sqlalchemy import Column, Integer, String, DateTime, func
 from database import Base
 
-class Card(Base):
-    __tablename__ = "cards"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    bank_name = Column(String(100), nullable=False)
-    card_name = Column(String(100), nullable=False)
-    type = Column(String(20), nullable=False)  # "personal" or "business"
-    est_limit_min = Column(Integer, nullable=False)
-    est_limit_max = Column(Integer, nullable=False)
-    approval_pct = Column(Numeric(5, 2), nullable=False)
-    instant_approval = Column(Boolean, default=False)
-    application_url = Column(Text, nullable=False)
-    notes = Column(Text, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

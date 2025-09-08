@@ -1,29 +1,38 @@
+# database.py
+
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
+from sqlalchemy.exc import SQLAlchemyError
 
-# Read the DATABASE_URL from Railway env variables
+# Get DATABASE_URL from Railway environment variables
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError("No DATABASE_URL set in environment variables")
+    raise ValueError("❌ DATABASE_URL is not set in environment variables")
 
-engine = create_engine(DATABASE_URL)
+# Create SQLAlchemy engine
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,       # ensures connections are valid
+    pool_size=10,             # connection pool size
+    max_overflow=20           # allow some burst connections
+)
+
+# Create SessionLocal class for DB sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Base class for ORM models
 Base = declarative_base()
 
-# Dependency for FastAPI routes
+
+# Dependency: yield DB session for FastAPI routes
 def get_db():
     db = SessionLocal()
     try:
         yield db
+    except SQLAlchemyError as e:
+        print(f"❌ Database error: {e}")
+        raise
     finally:
         db.close()
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}

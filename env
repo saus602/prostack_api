@@ -1,0 +1,1 @@
+DATABASE_URL=postgresql://prostack_user:prostack_pass@localhost:5432/prostackdb

@@ -1,49 +1,42 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 import models, schemas
 
-# Create tables automatically at startup
+# Initialize FastAPI
+app = FastAPI()
+
+# Create database tables if they don’t exist
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="ProStack API")
 
-# ------------------------------
-# Routes
-# ------------------------------
-
+# ---------- Health Check ----------
 @app.get("/")
-def root():
-    return {"message": "Welcome to ProStack API 🚀"}
+def read_root():
+    return {"message": "🚀 ProStack API is running!"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
-# Get all cards
+# ---------- Cards Endpoints ----------
 @app.get("/cards", response_model=list[schemas.Card])
 def read_cards(db: Session = Depends(get_db)):
-    return db.query(models.Card).all()
+    try:
+        cards = db.query(models.Card).all()
+        return cards
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-# Add new card
 @app.post("/cards", response_model=schemas.Card)
 def create_card(card: schemas.CardCreate, db: Session = Depends(get_db)):
-    db_card = models.Card(**card.dict())
-    db.add(db_card)
-    db.commit()
-    db.refresh(db_card)
-    return db_card
-
-
-# Get all clients
-@app.get("/clients", response_model=list[schemas.Client])
-def read_clients(db: Session = Depends(get_db)):
-    return db.query(models.Client).all()
-
-
-# Add new client
-@app.post("/clients", response_model=schemas.Client)
-def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
-    db_client = models.Client(**client.dict())
-    db.add(db_client)
-    db.commit()
-    db.refresh(db_client)
-    return db_client
+    try:
+        db_card = models.Card(**card.dict())
+        db.add(db_card)
+        db.commit()
+        db.refresh(db_card)
+        return db_card
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create card: {str(e)}")

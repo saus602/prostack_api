@@ -1,38 +1,29 @@
-# main.py
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-
-import models, schemas
 from database import engine, Base, get_db
+import models, schemas
 
-# Create all database tables (if they don't exist yet)
+# Create tables automatically at startup
 Base.metadata.create_all(bind=engine)
 
-# Initialize FastAPI app
-app = FastAPI(title="ProStack API", version="1.0.0")
+app = FastAPI(title="ProStack API")
 
+# ------------------------------
+# Routes
+# ------------------------------
 
-# ------------------------
-# ROUTES
-# ------------------------
+@app.get("/")
+def root():
+    return {"message": "Welcome to ProStack API 🚀"}
+
 
 # Get all cards
 @app.get("/cards", response_model=list[schemas.Card])
 def read_cards(db: Session = Depends(get_db)):
-    cards = db.query(models.Card).all()
-    return cards
+    return db.query(models.Card).all()
 
 
-# Get a single card by ID
-@app.get("/cards/{card_id}", response_model=schemas.Card)
-def read_card(card_id: int, db: Session = Depends(get_db)):
-    card = db.query(models.Card).filter(models.Card.id == card_id).first()
-    if not card:
-        raise HTTPException(status_code=404, detail="Card not found")
-    return card
-
-
-# Add a new card
+# Add new card
 @app.post("/cards", response_model=schemas.Card)
 def create_card(card: schemas.CardCreate, db: Session = Depends(get_db)):
     db_card = models.Card(**card.dict())
@@ -42,12 +33,17 @@ def create_card(card: schemas.CardCreate, db: Session = Depends(get_db)):
     return db_card
 
 
-# Delete a card
-@app.delete("/cards/{card_id}")
-def delete_card(card_id: int, db: Session = Depends(get_db)):
-    card = db.query(models.Card).filter(models.Card.id == card_id).first()
-    if not card:
-        raise HTTPException(status_code=404, detail="Card not found")
-    db.delete(card)
+# Get all clients
+@app.get("/clients", response_model=list[schemas.Client])
+def read_clients(db: Session = Depends(get_db)):
+    return db.query(models.Client).all()
+
+
+# Add new client
+@app.post("/clients", response_model=schemas.Client)
+def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
+    db_client = models.Client(**client.dict())
+    db.add(db_client)
     db.commit()
-    return {"detail": "Card deleted successfully"}
+    db.refresh(db_client)
+    return db_client

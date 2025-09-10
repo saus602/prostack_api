@@ -1,42 +1,36 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from database import engine, Base, get_db
 import models, schemas
+from database import engine, Base, get_db
 
-# Initialize FastAPI
-app = FastAPI()
-
-# Create database tables if they don’t exist
+# Create all database tables
 Base.metadata.create_all(bind=engine)
 
+# Initialize FastAPI app
+app = FastAPI()
 
-# ---------- Health Check ----------
+# --- Health & Root Routes ---
 @app.get("/")
 def read_root():
-    return {"message": "🚀 ProStack API is running!"}
+    return {"message": "Hello from Railway! 🚀"}
 
 @app.get("/health")
-def health():
+def health_check():
     return {"status": "ok"}
 
+# --- Example Endpoints ---
 
-# ---------- Cards Endpoints ----------
-@app.get("/cards", response_model=list[schemas.Card])
-def read_cards(db: Session = Depends(get_db)):
-    try:
-        cards = db.query(models.Card).all()
-        return cards
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+@app.get("/clients", response_model=list[schemas.Client])
+def get_clients(db: Session = Depends(get_db)):
+    """Fetch all clients"""
+    return db.query(models.Client).all()
 
 
-@app.post("/cards", response_model=schemas.Card)
-def create_card(card: schemas.CardCreate, db: Session = Depends(get_db)):
-    try:
-        db_card = models.Card(**card.dict())
-        db.add(db_card)
-        db.commit()
-        db.refresh(db_card)
-        return db_card
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create card: {str(e)}")
+@app.post("/clients", response_model=schemas.Client)
+def create_client(client: schemas.ClientCreate, db: Session = Depends(get_db)):
+    """Create a new client"""
+    db_client = models.Client(**client.dict())
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return db_client

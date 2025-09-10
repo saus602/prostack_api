@@ -1,7 +1,1 @@
-prostack_api/
-├── main.py
-├── database.py
-├── models.py
-├── schemas.py
-├── requirements.txt
-└── Procfile
+web: uvicorn main:app --host 0.0.0.0 --port 8000
